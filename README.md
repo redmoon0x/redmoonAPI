@@ -46,7 +46,7 @@ RedMoon API CLI is an all-in-one command-line interface that provides seamless a
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/redmoon-api-cli.git
+   git clone https://github.com/redmoon0x/redmoonAPI.git
    cd redmoon-api-cli
    ```
 
