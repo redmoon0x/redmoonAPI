@@ -7,11 +7,16 @@ A comprehensive CLI for interacting with various AI services.
 
 import os
 import sys
+import time
 import argparse
-from colorama import Fore, Style, init
+import shutil
+from colorama import Fore, Style, Back, init
 
 # Initialize colorama
 init(autoreset=True)
+
+# Get terminal size
+terminal_width, terminal_height = shutil.get_terminal_size()
 
 # Try to import all available modules
 try:
@@ -65,68 +70,144 @@ except ImportError:
 
 
 def print_header():
-    """Print the application header."""
-    header = """
-    ╔═══════════════════════════════════════════╗
-    ║             REDMOON API CLI               ║
-    ║                                           ║
-    ║  A comprehensive command-line interface   ║
-    ║  for interacting with various AI services ║
-    ╚═══════════════════════════════════════════╝
+    """Print the application header with ASCII art."""
+    # Clear screen first
+    clear_screen()
+
+    # ASCII art logo
+    logo = """
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                                                              ║
+    ║  ██████╗ ███████╗██████╗ ███╗   ███╗ ██████╗  ██████╗ ███╗   ║
+    ║  ██╔══██╗██╔════╝██╔══██╗████╗ ████║██╔═══██╗██╔═══██╗████╗  ║
+    ║  ██████╔╝█████╗  ██║  ██║██╔████╔██║██║   ██║██║   ██║██╔██╗ ║
+    ║  ██╔══██╗██╔══╝  ██║  ██║██║╚██╔╝██║██║   ██║██║   ██║██║╚██╗║
+    ║  ██║  ██║███████╗██████╔╝██║ ╚═╝ ██║╚██████╔╝╚██████╔╝██║ ╚██║║
+    ║  ╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝║
+    ║                                                              ║
+    ╚═══════════════════════════════════════════════════════════════╝
     """
-    print_colored(header, Fore.CYAN, Style.BRIGHT)
+
+    # Center the logo
+    centered_logo = '\n'.join(line.center(terminal_width) for line in logo.split('\n'))
+
+    # Print the logo with a gradient effect
+    colors = [Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.BLUE, Fore.MAGENTA]
+    lines = centered_logo.split('\n')
+
+    for i, line in enumerate(lines):
+        color = colors[i % len(colors)]
+        print(f"{Style.BRIGHT}{color}{line}")
+
+    # Subtitle
+    subtitle = "[ Advanced AI Interaction Platform ]"
+    centered_subtitle = subtitle.center(terminal_width)
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{centered_subtitle}")
+
+    # GitHub info
+    github_info = "github.com/redmoon0x"
+    centered_github = github_info.center(terminal_width)
+    print(f"{Fore.CYAN}{centered_github}")
+
+    # Version and info
+    version_info = "v1.0.0 | Developed by RedMoon AI Team"
+    centered_version = version_info.center(terminal_width)
+    print(f"{Fore.LIGHTBLACK_EX}{centered_version}")
+
+    # Decorative line
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}{'═' * terminal_width}\n")
 
 
-def print_colored(text, color=Fore.WHITE, style=Style.NORMAL):
-    """Print colored text using colorama."""
-    print(f"{style}{color}{text}")
+def print_colored(text, color=Fore.WHITE, style=Style.NORMAL, background=None):
+    """Print colored text using colorama with optional background."""
+    bg = background if background else ""
+    print(f"{style}{color}{bg}{text}")
+
+
+def print_spinner(text, duration=2, color=Fore.CYAN):
+    """Display a spinner animation with text."""
+    spinner_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    end_time = time.time() + duration
+    i = 0
+
+    while time.time() < end_time:
+        sys.stdout.write(f"\r{color}{spinner_chars[i % len(spinner_chars)]} {text}")
+        sys.stdout.flush()
+        time.sleep(0.1)
+        i += 1
+
+    sys.stdout.write(f"\r{' ' * (len(text) + 2)}\r")
+    sys.stdout.flush()
 
 
 def print_menu():
-    """Print the main menu options."""
-    print("\n" + "="*50)
-    print_colored("MAIN MENU", Fore.CYAN, Style.BRIGHT)
-    print_colored("Please select a service:", Fore.YELLOW)
+    """Print the main menu options with a modern UI."""
+    # Menu title
+    menu_title = "MAIN MENU"
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.BLUE} {menu_title} {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Select a service by entering its number{Style.RESET_ALL}")
 
-    # Chat services
-    print_colored("\nChat Services:", Fore.GREEN)
-    print("  1. Scira Chat")
-    print("  2. Qwen Chat")
-    print("  3. ChatGot Chat")
-    print("  4. Uncovr Client")
-    print("  5. Blackbox AI")
-    print("  6. Mistral Small 3.1 24B")
-    print("  7. Llama 3.2 3B Akash")
+    # Create a box for the menu
+    box_width = terminal_width - 10
 
-    # Generation services
-    print_colored("\nGeneration Services:", Fore.GREEN)
-    print("  8. Image Generation (PixelMuse)")
-    print("  9. Image Generation (MagicStudio)")
-    print(" 10. Image Generation (Fluently XL)")
-    print(" 11. Image Generation (Flux Standard)")
-    print(" 12. Voice Generation")
+    # Chat services section
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} 💬 CHAT SERVICES {Style.RESET_ALL}")
+    print(f"{Fore.CYAN}┌{'─' * (box_width - 2)}┐")
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  1. {Fore.CYAN}🔮 {Fore.WHITE}Scira Chat{' ' * (box_width - 18)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  2. {Fore.CYAN}🌐 {Fore.WHITE}Qwen Chat{' ' * (box_width - 18)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  3. {Fore.CYAN}💭 {Fore.WHITE}ChatGot Chat{' ' * (box_width - 21)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  4. {Fore.CYAN}🔍 {Fore.WHITE}Uncovr Client{' ' * (box_width - 22)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  5. {Fore.CYAN}⚡ {Fore.WHITE}Blackbox AI{' ' * (box_width - 19)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  6. {Fore.CYAN}🧠 {Fore.WHITE}Mistral Small 3.1 24B{' ' * (box_width - 29)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  7. {Fore.CYAN}🦙 {Fore.WHITE}Llama 3.2 3B Akash{' ' * (box_width - 26)}│")
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.CYAN}└{'─' * (box_width - 2)}┘")
 
-    # Other options
-    print_colored("\nOther Options:", Fore.GREEN)
-    print("  0. Exit")
-    print(" 13. Clear Screen")
-    print(" 14. Help")
+    # Generation services section
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} 🎨 GENERATION SERVICES {Style.RESET_ALL}")
+    print(f"{Fore.MAGENTA}┌{'─' * (box_width - 2)}┐")
+    print(f"{Fore.MAGENTA}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE}  8. {Fore.MAGENTA}🖼️ {Fore.WHITE}Image Generation (PixelMuse){' ' * (box_width - 36)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE}  9. {Fore.MAGENTA}🎭 {Fore.WHITE}Image Generation (MagicStudio){' ' * (box_width - 37)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 10. {Fore.MAGENTA}🌄 {Fore.WHITE}Image Generation (Fluently XL){' ' * (box_width - 38)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 11. {Fore.MAGENTA}✨ {Fore.WHITE}Image Generation (Flux Standard){' ' * (box_width - 40)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 12. {Fore.MAGENTA}🔊 {Fore.WHITE}Voice Generation{' ' * (box_width - 25)}│")
+    print(f"{Fore.MAGENTA}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.MAGENTA}└{'─' * (box_width - 2)}┘")
 
-    print("\n" + "="*50)
+    # Other options section
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.RED} ⚙️ SYSTEM OPTIONS {Style.RESET_ALL}")
+    print(f"{Fore.RED}┌{'─' * (box_width - 2)}┐")
+    print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.RED}│{Fore.WHITE}  0. {Fore.RED}🚪 {Fore.WHITE}Exit{' ' * (box_width - 13)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 13. {Fore.RED}🧹 {Fore.WHITE}Clear Screen{' ' * (box_width - 21)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 14. {Fore.RED}❓ {Fore.WHITE}Help{' ' * (box_width - 13)}│")
+    print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.RED}└{'─' * (box_width - 2)}┘")
+
+    # Status bar at the bottom
+    current_time = time.strftime("%H:%M:%S")
+    status = f"System Ready | Time: {current_time} | Press Ctrl+C to exit anytime"
+    print(f"\n{Style.BRIGHT}{Fore.BLACK}{Back.WHITE} {status} {Style.RESET_ALL}")
 
 
 def get_user_choice(min_value=0, max_value=14):
-    """Get a valid choice from the user."""
+    """Get a valid choice from the user with improved UI."""
+    prompt = f"\n{Style.BRIGHT}{Fore.CYAN}┌─ Enter your choice [{min_value}-{max_value}]\n└─❯ {Style.RESET_ALL}"
+
     while True:
         try:
-            choice = input(f"{Fore.CYAN}Enter your choice [{min_value}-{max_value}]: {Style.RESET_ALL}")
+            choice = input(prompt)
             choice = int(choice)
             if min_value <= choice <= max_value:
+                # Show a brief loading animation
+                print_spinner("Processing your selection...", 0.5)
                 return choice
             else:
-                print_colored(f"Please enter a number between {min_value} and {max_value}.", Fore.RED)
+                print(f"{Fore.RED}⚠️ Please enter a number between {min_value} and {max_value}.{Style.RESET_ALL}")
         except ValueError:
-            print_colored("Please enter a valid number.", Fore.RED)
+            print(f"{Fore.RED}⚠️ Please enter a valid number.{Style.RESET_ALL}")
 
 
 def run_scira_chat():
@@ -151,9 +232,10 @@ def run_scira_chat():
     client = SciraChat(model=model)
 
     # Print header
-    print_colored("\nStarting Scira Chat...", Fore.GREEN)
-    print_colored(f"Currently using model: {client.get_model()}", Fore.GREEN)
-    print_colored("Type 'exit' to return to the main menu.", Fore.YELLOW)
+    # Print stylish header for the chat
+    model_name = client.get_model()
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} SCIRA CHAT - {model_name.upper()} {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu{Style.RESET_ALL}")
 
     # Main chat loop
     while True:
@@ -168,7 +250,7 @@ def run_scira_chat():
             break
 
         # Send the message to the API
-        print_colored("Scira is typing...", Fore.YELLOW)
+        print_spinner("Scira is thinking...", 1.5, Fore.YELLOW)
 
         # Get the response
         response = client.chat(message)
@@ -192,8 +274,9 @@ def run_qwen_chat():
     # Initialize the client
     client = QwenAIClient()
 
-    print_colored("\nStarting Qwen Chat...", Fore.GREEN)
-    print_colored("Type 'exit' to return to the main menu, 'clear' to clear history.", Fore.YELLOW)
+    # Print stylish header for the chat
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} QWEN CHAT {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu, 'clear' to clear history{Style.RESET_ALL}")
 
     while True:
         try:
@@ -213,7 +296,7 @@ def run_qwen_chat():
                 continue
 
             # Show processing message
-            print_colored("Qwen is thinking...", Fore.YELLOW)
+            print_spinner("Qwen is thinking...", 1.5, Fore.YELLOW)
 
             # Send the message to the API
             response = client.send_message(user_input)
@@ -240,9 +323,10 @@ def run_chatgot_chat():
         return
 
     client = ChatGotClient()
-    print_colored("\nStarting ChatGot Chat...", Fore.GREEN)
-    print_colored("Using random device IDs to bypass rate limiting", Fore.YELLOW)
-    print_colored("Type 'exit' to return to the main menu.", Fore.YELLOW)
+    # Print stylish header for the chat
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} CHATGOT CHAT {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Using random device IDs to bypass rate limiting{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu{Style.RESET_ALL}")
 
     conversation_id = None
 
@@ -257,7 +341,7 @@ def run_chatgot_chat():
         if not user_input:
             continue
 
-        print_colored("ChatGot is typing...", Fore.YELLOW)
+        print_spinner("ChatGot is thinking...", 1.5, Fore.YELLOW)
         print_colored("Assistant:", Fore.CYAN, Style.BRIGHT)
         response, new_conversation_id = client.send_message(user_input)
 
@@ -285,8 +369,9 @@ def run_uncovr_client():
     focus = None
     tools = None
 
-    print_colored("\nStarting Uncovr.app Chat...", Fore.GREEN)
-    print_colored("Type 'exit' to return to the main menu, 'help' for commands.", Fore.YELLOW)
+    # Print stylish header for the chat
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} UNCOVR CHAT {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu, 'help' for commands{Style.RESET_ALL}")
 
     # Initialize client
     client = UncovrClient(cookies=cookies, debug=debug)
@@ -311,7 +396,7 @@ def run_uncovr_client():
             print_colored("  help - Show this help message", Fore.CYAN)
             continue
 
-        print_colored("Uncovr is thinking...", Fore.YELLOW)
+        print_spinner("Uncovr is thinking...", 1.5, Fore.YELLOW)
 
         # Send the message
         response = client.send_message(user_input, chat_id=chat_id)
@@ -334,7 +419,8 @@ def run_pixelmuse_image_generation():
         input("\nPress Enter to return to the main menu...")
         return
 
-    print_colored("\nPixelMuse Image Generation", Fore.GREEN)
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} PIXELMUSE IMAGE GENERATION {Style.RESET_ALL}")
 
     # Get prompt from user
     print_colored("Enter image description:", Fore.YELLOW)
@@ -367,7 +453,7 @@ def run_pixelmuse_image_generation():
     ratio_map = {1: "1:1", 2: "16:9", 3: "9:16", 4: "3:2", 5: "4:3"}
     aspect_ratio = ratio_map[ratio_choice]
 
-    print_colored("\nGenerating image...", Fore.YELLOW)
+    print_spinner("Generating image with PixelMuse...", 1.5, Fore.MAGENTA)
 
     # Generate the image
     result = pixelmuse_generate(
@@ -406,7 +492,8 @@ def run_fluently_xl():
         input("\nPress Enter to return to the main menu...")
         return
 
-    print_colored("\nFluently XL Final Image Generation", Fore.GREEN)
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} FLUENTLY XL IMAGE GENERATION {Style.RESET_ALL}")
 
     # Get prompt from user
     print_colored("Enter image description:", Fore.YELLOW)
@@ -432,7 +519,7 @@ def run_fluently_xl():
     print_colored("\nEnter negative prompt (optional):", Fore.YELLOW)
     negative_prompt = input("> ").strip()
 
-    print_colored("\nGenerating image...", Fore.YELLOW)
+    print_spinner("Generating image with Fluently XL...", 1.5, Fore.MAGENTA)
 
     # Initialize the client
     client = FluentlyXL(debug=False)
@@ -459,7 +546,8 @@ def run_flux_standard():
         input("\nPress Enter to return to the main menu...")
         return
 
-    print_colored("\nFlux Standard Image Generation", Fore.GREEN)
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} FLUX STANDARD IMAGE GENERATION {Style.RESET_ALL}")
 
     # Get prompt from user
     print_colored("Enter image description:", Fore.YELLOW)
@@ -485,7 +573,7 @@ def run_flux_standard():
     print_colored("\nEnter negative prompt (optional):", Fore.YELLOW)
     negative_prompt = input("> ").strip()
 
-    print_colored("\nGenerating image...", Fore.YELLOW)
+    print_spinner("Generating image with Flux Standard...", 1.5, Fore.MAGENTA)
 
     # Initialize the client
     client = FluxStandard(debug=False)
@@ -512,7 +600,8 @@ def run_voice_generation():
         input("\nPress Enter to return to the main menu...")
         return
 
-    print_colored("\nAI Voice Generator", Fore.GREEN)
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} AI VOICE GENERATOR {Style.RESET_ALL}")
 
     # Get text from user
     print_colored("Enter the text to convert to speech:", Fore.YELLOW)
@@ -540,7 +629,7 @@ def run_voice_generation():
     else:
         language = lang_map[lang_choice]
 
-    print_colored("\nGenerating voice...", Fore.YELLOW)
+    print_spinner("Generating voice...", 1.5, Fore.YELLOW)
 
     # Generate the voice
     result = generate_voice(text, language)
@@ -571,7 +660,8 @@ def run_blackbox_ai():
         input("\nPress Enter to return to the main menu...")
         return
 
-    print_colored("\nBlackbox AI", Fore.GREEN)
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} BLACKBOX AI {Style.RESET_ALL}")
 
     # Get message from user
     print_colored("Enter your message:", Fore.YELLOW)
@@ -587,6 +677,7 @@ def run_blackbox_ai():
     web_search = True if web_search_input == "y" else False
 
     # Send the request
+    print_spinner("Blackbox AI is processing your request...", 1.5, Fore.YELLOW)
     blackbox_request(message, web_search)
 
 
@@ -601,9 +692,10 @@ def run_mistral_small():
     # Initialize the client
     client = MistralSmall(debug=False)
 
-    print_colored("\nStarting Mistral Small 3.1 24B Chat...", Fore.GREEN)
-    print_colored(f"Currently using model: {client.get_model()}", Fore.GREEN)
-    print_colored("Type 'exit' to return to the main menu, 'clear' to clear history.", Fore.YELLOW)
+    # Print stylish header for the chat
+    model_name = client.get_model()
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} MISTRAL CHAT - {model_name} {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu, 'clear' to clear history{Style.RESET_ALL}")
 
     # Main chat loop
     while True:
@@ -623,7 +715,7 @@ def run_mistral_small():
             continue
 
         # Send the message to the API
-        print_colored("Mistral is thinking...", Fore.YELLOW)
+        print_spinner("Mistral is thinking...", 1.5, Fore.YELLOW)
 
         # Get the response
         response = client.send_message(message)
@@ -647,9 +739,10 @@ def run_llama_akash():
     # Initialize the client
     client = LlamaAkash(debug=False)
 
-    print_colored("\nStarting Llama 3.2 3B Akash Chat...", Fore.GREEN)
-    print_colored(f"Currently using model: {client.get_model()}", Fore.GREEN)
-    print_colored("Type 'exit' to return to the main menu, 'clear' to clear history.", Fore.YELLOW)
+    # Print stylish header for the chat
+    model_name = client.get_model()
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.GREEN} LLAMA CHAT - {model_name} {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu, 'clear' to clear history{Style.RESET_ALL}")
 
     # Main chat loop
     while True:
@@ -669,7 +762,7 @@ def run_llama_akash():
             continue
 
         # Send the message to the API
-        print_colored("Llama is thinking...", Fore.YELLOW)
+        print_spinner("Llama is thinking...", 1.5, Fore.YELLOW)
 
         # Get the response
         response = client.send_message(message)
@@ -707,9 +800,76 @@ def print_help():
 
 
 def clear_screen():
-    """Clear the terminal screen."""
+    """Clear the terminal screen with animation."""
+    # Show a brief clearing animation
+    print_spinner("Clearing screen...", 0.5)
+
+    # Clear the screen based on OS
     os.system('cls' if os.name == 'nt' else 'clear')
-    print_header()
+
+
+def print_help():
+    """Print help information with improved formatting."""
+    clear_screen()
+
+    # Help header
+    help_title = "REDMOON API CLI HELP"
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.BLUE} {help_title} {Style.RESET_ALL}")
+
+    # Create a box for the help content
+    box_width = terminal_width - 10
+
+    print(f"{Fore.CYAN}┌{'─' * (box_width - 2)}┐")
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+
+    # About section
+    print(f"{Fore.CYAN}│ {Style.BRIGHT}{Fore.WHITE}ABOUT{' ' * (box_width - 8)}│{Style.RESET_ALL}")
+    about_text = "RedMoon API CLI is a comprehensive command-line interface for interacting with various AI services."
+    # Wrap text to fit in the box
+    words = about_text.split()
+    line = ""
+    for word in words:
+        if len(line + word) + 1 <= box_width - 4:
+            line += word + " "
+        else:
+            print(f"{Fore.CYAN}│ {Fore.WHITE}{line}{' ' * (box_width - len(line) - 3)}│")
+            line = word + " "
+    if line:
+        print(f"{Fore.CYAN}│ {Fore.WHITE}{line}{' ' * (box_width - len(line) - 3)}│")
+
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+
+    # Available Services section
+    print(f"{Fore.CYAN}│ {Style.BRIGHT}{Fore.WHITE}AVAILABLE SERVICES{' ' * (box_width - 20)}│{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}💬 Chat Services:{' ' * (box_width - 17)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Scira, Qwen, ChatGot, Uncovr, Blackbox AI{' ' * (box_width - 48)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Mistral Small 3.1 24B, Llama 3.2 3B Akash{' ' * (box_width - 48)}│")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}🎨 Generation Services:{' ' * (box_width - 24)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Image: PixelMuse, MagicStudio, Fluently XL, Flux Standard{' ' * (box_width - 64)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Voice Generation{' ' * (box_width - 21)}│")
+
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+
+    # Navigation section
+    print(f"{Fore.CYAN}│ {Style.BRIGHT}{Fore.WHITE}NAVIGATION{' ' * (box_width - 12)}│{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• Use numbers to select options from menus{' ' * (box_width - 42)}│")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• Type 'exit', 'quit', or 'back' to return to previous menus{' ' * (box_width - 62)}│")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• Press Ctrl+C to exit the application at any time{' ' * (box_width - 52)}│")
+
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+
+    # Keyboard shortcuts section
+    print(f"{Fore.CYAN}│ {Style.BRIGHT}{Fore.WHITE}KEYBOARD SHORTCUTS{' ' * (box_width - 20)}│{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• 0: Exit to main menu{' ' * (box_width - 22)}│")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• 13: Clear screen{' ' * (box_width - 19)}│")
+    print(f"{Fore.CYAN}│ {Fore.WHITE}• 14: Show this help{' ' * (box_width - 21)}│")
+
+    print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
+    print(f"{Fore.CYAN}└{'─' * (box_width - 2)}┘")
+
+    # Footer
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}Press Enter to return to the main menu...{Style.RESET_ALL}")
+    input()
 
 
 def main():
