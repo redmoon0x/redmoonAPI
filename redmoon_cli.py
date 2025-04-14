@@ -35,6 +35,14 @@ except ImportError:
     UncovrClient = None
 
 try:
+    from venice_client import MistralSmall, LlamaAkash, FluentlyXL, FluxStandard
+except ImportError:
+    MistralSmall = None
+    LlamaAkash = None
+    FluentlyXL = None
+    FluxStandard = None
+
+try:
     from imagegen import generate_image as pixelmuse_generate
 except ImportError:
     pixelmuse_generate = None
@@ -87,23 +95,27 @@ def print_menu():
     print("  3. ChatGot Chat")
     print("  4. Uncovr Client")
     print("  5. Blackbox AI")
+    print("  6. Mistral Small 3.1 24B")
+    print("  7. Llama 3.2 3B Akash")
 
     # Generation services
     print_colored("\nGeneration Services:", Fore.GREEN)
-    print("  6. Image Generation (PixelMuse)")
-    print("  7. Image Generation (MagicStudio)")
-    print("  8. Voice Generation")
+    print("  8. Image Generation (PixelMuse)")
+    print("  9. Image Generation (MagicStudio)")
+    print(" 10. Image Generation (Fluently XL)")
+    print(" 11. Image Generation (Flux Standard)")
+    print(" 12. Voice Generation")
 
     # Other options
     print_colored("\nOther Options:", Fore.GREEN)
     print("  0. Exit")
-    print("  9. Clear Screen")
-    print(" 10. Help")
+    print(" 13. Clear Screen")
+    print(" 14. Help")
 
     print("\n" + "="*50)
 
 
-def get_user_choice(min_value=0, max_value=10):
+def get_user_choice(min_value=0, max_value=14):
     """Get a valid choice from the user."""
     while True:
         try:
@@ -386,6 +398,112 @@ def run_magicstudio_image_generation():
     magicstudio_generate()
 
 
+def run_fluently_xl():
+    """Run the Fluently XL Final image generation service."""
+    if FluentlyXL is None:
+        print_colored("\nFluently XL Final image generation module is not available.", Fore.RED)
+        print_colored("Please make sure the 'venice_client.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    print_colored("\nFluently XL Final Image Generation", Fore.GREEN)
+
+    # Get prompt from user
+    print_colored("Enter image description:", Fore.YELLOW)
+    prompt = input("> ").strip()
+
+    if not prompt:
+        print_colored("Prompt cannot be empty.", Fore.RED)
+        return
+
+    # Get aspect ratio choice
+    print_colored("\nSelect aspect ratio:", Fore.YELLOW)
+    print("  1. 1:1 (Square)")
+    print("  2. 16:9 (Landscape)")
+    print("  3. 9:16 (Portrait)")
+    print("  4. 4:3")
+    print("  5. 3:4")
+
+    ratio_choice = get_user_choice(1, 5)
+    ratio_map = {1: "1:1", 2: "16:9", 3: "9:16", 4: "4:3", 5: "3:4"}
+    aspect_ratio = ratio_map[ratio_choice]
+
+    # Get negative prompt (optional)
+    print_colored("\nEnter negative prompt (optional):", Fore.YELLOW)
+    negative_prompt = input("> ").strip()
+
+    print_colored("\nGenerating image...", Fore.YELLOW)
+
+    # Initialize the client
+    client = FluentlyXL(debug=False)
+
+    try:
+        # Generate the image
+        image_path = client.generate_image(
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            negative_prompt=negative_prompt
+        )
+
+        print_colored("\nImage generated successfully!", Fore.GREEN)
+        print_colored(f"Image saved to: {image_path}", Fore.CYAN)
+    except Exception as e:
+        print_colored(f"\nError generating image: {str(e)}", Fore.RED)
+
+
+def run_flux_standard():
+    """Run the Flux Standard image generation service."""
+    if FluxStandard is None:
+        print_colored("\nFlux Standard image generation module is not available.", Fore.RED)
+        print_colored("Please make sure the 'venice_client.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    print_colored("\nFlux Standard Image Generation", Fore.GREEN)
+
+    # Get prompt from user
+    print_colored("Enter image description:", Fore.YELLOW)
+    prompt = input("> ").strip()
+
+    if not prompt:
+        print_colored("Prompt cannot be empty.", Fore.RED)
+        return
+
+    # Get aspect ratio choice
+    print_colored("\nSelect aspect ratio:", Fore.YELLOW)
+    print("  1. 1:1 (Square)")
+    print("  2. 16:9 (Landscape)")
+    print("  3. 9:16 (Portrait)")
+    print("  4. 4:3")
+    print("  5. 3:4")
+
+    ratio_choice = get_user_choice(1, 5)
+    ratio_map = {1: "1:1", 2: "16:9", 3: "9:16", 4: "4:3", 5: "3:4"}
+    aspect_ratio = ratio_map[ratio_choice]
+
+    # Get negative prompt (optional)
+    print_colored("\nEnter negative prompt (optional):", Fore.YELLOW)
+    negative_prompt = input("> ").strip()
+
+    print_colored("\nGenerating image...", Fore.YELLOW)
+
+    # Initialize the client
+    client = FluxStandard(debug=False)
+
+    try:
+        # Generate the image
+        image_path = client.generate_image(
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            negative_prompt=negative_prompt
+        )
+
+        print_colored("\nImage generated successfully!", Fore.GREEN)
+        print_colored(f"Image saved to: {image_path}", Fore.CYAN)
+    except Exception as e:
+        print_colored(f"\nError generating image: {str(e)}", Fore.RED)
+
+
 def run_voice_generation():
     """Run the voice generation service."""
     if generate_voice is None or download_audio is None:
@@ -472,6 +590,98 @@ def run_blackbox_ai():
     blackbox_request(message, web_search)
 
 
+def run_mistral_small():
+    """Run the Mistral Small 3.1 24B client."""
+    if MistralSmall is None:
+        print_colored("\nMistral Small 3.1 24B module is not available.", Fore.RED)
+        print_colored("Please make sure the 'venice_client.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    # Initialize the client
+    client = MistralSmall(debug=False)
+
+    print_colored("\nStarting Mistral Small 3.1 24B Chat...", Fore.GREEN)
+    print_colored(f"Currently using model: {client.get_model()}", Fore.GREEN)
+    print_colored("Type 'exit' to return to the main menu, 'clear' to clear history.", Fore.YELLOW)
+
+    # Main chat loop
+    while True:
+        print("\n" + "="*50)
+        print_colored("You:", Fore.GREEN, Style.BRIGHT)
+        message = input("> ").strip()
+
+        if not message:
+            continue
+
+        if message.lower() in ('exit', 'quit', 'q', 'back'):
+            break
+
+        if message.lower() == 'clear':
+            client.clear_history()
+            print_colored("Chat history cleared. Starting new conversation.", Fore.YELLOW)
+            continue
+
+        # Send the message to the API
+        print_colored("Mistral is thinking...", Fore.YELLOW)
+
+        # Get the response
+        response = client.send_message(message)
+        if not response:
+            print_colored("Failed to get a response. Please try again.", Fore.RED)
+            continue
+
+        # Display the response
+        print_colored("Mistral:", Fore.CYAN, Style.BRIGHT)
+        print(response)
+
+
+def run_llama_akash():
+    """Run the Llama 3.2 3B Akash client."""
+    if LlamaAkash is None:
+        print_colored("\nLlama 3.2 3B Akash module is not available.", Fore.RED)
+        print_colored("Please make sure the 'venice_client.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    # Initialize the client
+    client = LlamaAkash(debug=False)
+
+    print_colored("\nStarting Llama 3.2 3B Akash Chat...", Fore.GREEN)
+    print_colored(f"Currently using model: {client.get_model()}", Fore.GREEN)
+    print_colored("Type 'exit' to return to the main menu, 'clear' to clear history.", Fore.YELLOW)
+
+    # Main chat loop
+    while True:
+        print("\n" + "="*50)
+        print_colored("You:", Fore.GREEN, Style.BRIGHT)
+        message = input("> ").strip()
+
+        if not message:
+            continue
+
+        if message.lower() in ('exit', 'quit', 'q', 'back'):
+            break
+
+        if message.lower() == 'clear':
+            client.clear_history()
+            print_colored("Chat history cleared. Starting new conversation.", Fore.YELLOW)
+            continue
+
+        # Send the message to the API
+        print_colored("Llama is thinking...", Fore.YELLOW)
+
+        # Get the response
+        response = client.send_message(message)
+        if not response:
+            print_colored("Failed to get a response. Please try again.", Fore.RED)
+            continue
+
+        # Display the response
+        print_colored("Llama:", Fore.CYAN, Style.BRIGHT)
+        print(response)
+
+
 def print_help():
     """Print help information."""
     help_text = """
@@ -481,8 +691,8 @@ def print_help():
     This is a comprehensive command-line interface for interacting with various AI services.
 
     Available Services:
-    - Chat Services: Scira, Qwen, ChatGot, Uncovr, Blackbox AI
-    - Image Generation: PixelMuse, MagicStudio
+    - Chat Services: Scira, Qwen, ChatGot, Uncovr, Blackbox AI, Mistral Small 3.1 24B, Llama 3.2 3B Akash
+    - Image Generation: PixelMuse, MagicStudio, Fluently XL Final, Flux Standard
     - Voice Generation
 
     Navigation:
@@ -533,14 +743,22 @@ def main():
         elif choice == 5:
             run_blackbox_ai()
         elif choice == 6:
-            run_pixelmuse_image_generation()
+            run_mistral_small()
         elif choice == 7:
-            run_magicstudio_image_generation()
+            run_llama_akash()
         elif choice == 8:
-            run_voice_generation()
+            run_pixelmuse_image_generation()
         elif choice == 9:
-            clear_screen()
+            run_magicstudio_image_generation()
         elif choice == 10:
+            run_fluently_xl()
+        elif choice == 11:
+            run_flux_standard()
+        elif choice == 12:
+            run_voice_generation()
+        elif choice == 13:
+            clear_screen()
+        elif choice == 14:
             print_help()
 
 
