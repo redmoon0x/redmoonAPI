@@ -267,4 +267,6 @@ def clear_history():
     return jsonify({"error": "Cannot clear history for this model"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run in debug mode locally, but not in production
+    is_prod = os.environ.get('RENDER', False)
+    app.run(debug=not is_prod, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))

@@ -1,4 +1,4 @@
-# 🌙 RedMoon API CLI
+# 🌙 Redmoon0x - AI Chat Interface
 
 <div align="center">
   <img src="https://img.shields.io/badge/Python-3.7+-blue.svg" alt="Python 3.7+">
@@ -7,16 +7,22 @@
 </div>
 
 <p align="center">
-  <b>A comprehensive command-line interface for interacting with various AI services</b>
+  <b>A modern web interface and command-line tool for interacting with various AI services</b>
 </p>
 
 ---
 
 ## 📋 Overview
 
-RedMoon API CLI is an all-in-one command-line interface that provides seamless access to multiple AI services, including chat models, image generation, and voice synthesis. This tool allows you to interact with various AI services through a simple, intuitive menu-based interface.
+Redmoon0x is an all-in-one platform that provides seamless access to multiple AI services, including chat models, image generation, and voice synthesis. This tool allows you to interact with various AI services through either a modern web interface or a simple, intuitive command-line interface.
 
 ## ✨ Features
+
+- **Modern Web Interface**
+  - 🌓 Dark and light themes
+  - 📱 Responsive design for mobile and desktop
+  - 🔍 Web search capability for supported models
+  - ✨ Smooth animations and transitions
 
 - **Multiple Chat Services**
   - 💬 Scira Chat (with model selection: Default, Grok, Claude, Vision)
@@ -33,6 +39,31 @@ RedMoon API CLI is an all-in-one command-line interface that provides seamless a
   - 🔊 AI Voice Generator (with multiple language options)
 
 ## 🚀 Getting Started
+
+### Web Interface
+
+The web interface is deployed and accessible at:
+
+[https://redmoon0x.onrender.com](https://redmoon0x.onrender.com)
+
+Simply visit the URL to start chatting with various AI models.
+
+### Deploying to Render
+
+To deploy your own instance of the web interface on Render's free tier:
+
+1. Fork or clone this repository to your GitHub account
+2. Create a new Render account at https://render.com if you don't have one
+3. In the Render dashboard, click "New +" and select "Web Service"
+4. Connect your GitHub account and select this repository
+5. Use the following settings:
+   - Name: redmoon0x (or any name you prefer)
+   - Environment: Python
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn app:app`
+6. Click "Create Web Service"
+
+The application will be deployed and available at a URL provided by Render.
 
 ### Prerequisites
 
@@ -57,6 +88,8 @@ RedMoon API CLI is an all-in-one command-line interface that provides seamless a
 
 ### Usage
 
+#### Command-Line Interface
+
 Run the main CLI interface:
 
 ```bash
@@ -64,6 +97,16 @@ python redmoon_cli.py
 ```
 
 This will display the main menu where you can select the service you want to use.
+
+#### Web Interface
+
+Run the Flask web application locally:
+
+```bash
+python app.py
+```
+
+Then open your browser and navigate to `http://127.0.0.1:5000` to access the web interface.
 
 ## 📖 Services Guide
 
@@ -111,5 +154,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 <p align="center">
-  Made with ❤️ by Your Name
+  Made with ❤️ by <a href="https://github.com/redmoon0x">redmoon0x</a>
+</p>
+
+<p align="center">
+  <i>Disclaimer: These are reverse engineered APIs and I don't own them. This application is for educational purposes only.</i>
 </p>
