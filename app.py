@@ -180,7 +180,10 @@ def chat():
             response, _ = instance.send_message(message)
         elif model_id == "uncovr":
             instance = get_model_instance(model_id)
-            result = instance.send_message(message)
+            # For Uncovr, we need to modify the focus parameter based on websearch
+            # The default focus is ["web"], but we can add more if needed
+            focus = ["web", "search"] if websearch else ["web"]
+            result = instance.send_message(message, focus=focus)
             response = result.get("text", "Error: No response from Uncovr")
         elif model_id == "blackbox":
             # For Blackbox, we need to call the send_request_api function
