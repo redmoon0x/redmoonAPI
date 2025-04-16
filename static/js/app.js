@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('overlay');
     const websearchToggleContainer = document.getElementById('websearch-toggle-container');
     const websearchToggle = document.getElementById('websearch-toggle');
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeText = document.getElementById('theme-text');
 
     // State
     let currentModelId = null;
@@ -25,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let supportsWebSearch = false;
     let isGenerating = false;
     let chatHistory = [];
+    let currentTheme = localStorage.getItem('theme') || 'dark';
 
     // Event Listeners
     modelSelectorBtn.addEventListener('click', toggleModelDropdown);
@@ -35,6 +38,10 @@ document.addEventListener('DOMContentLoaded', function() {
     menuBtn.addEventListener('click', openSideMenu);
     closeMenuBtn.addEventListener('click', closeSideMenu);
     overlay.addEventListener('click', closeSideMenu);
+    themeToggleBtn.addEventListener('click', toggleTheme);
+
+    // Initialize theme
+    applyTheme();
 
     // Auto-resize textarea
     messageInput.addEventListener('input', function() {
@@ -262,6 +269,93 @@ document.addEventListener('DOMContentLoaded', function() {
     function closeSideMenu() {
         sideMenu.classList.add('translate-x-full');
         overlay.classList.add('hidden');
+    }
+
+    // Theme functions
+    function toggleTheme() {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', currentTheme);
+        applyTheme();
+    }
+
+    function applyTheme() {
+        // Update all elements with theme classes
+        const themeElements = document.querySelectorAll('[class*="dark:"], [class*="light:"]');
+
+        if (currentTheme === 'light') {
+            // Apply light theme
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
+
+            // Update theme toggle button
+            themeText.textContent = 'Light Mode';
+            themeToggleBtn.innerHTML = `
+                <span id="theme-text">Light Mode</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                </svg>
+            `;
+
+            // Update theme-specific elements
+            themeElements.forEach(el => {
+                const classes = el.className.split(' ');
+                classes.forEach(cls => {
+                    if (cls.startsWith('light:')) {
+                        const lightClass = cls.replace('light:', '');
+                        el.classList.add(lightClass);
+                    }
+                    if (cls.startsWith('dark:')) {
+                        const darkClass = cls.replace('dark:', '');
+                        el.classList.remove(darkClass);
+                    }
+                });
+            });
+
+            // Update model dropdown text color
+            const modelOptions = document.querySelectorAll('.model-option');
+            modelOptions.forEach(option => {
+                option.classList.remove('text-white');
+                option.classList.add('text-gray-800');
+            });
+
+        } else {
+            // Apply dark theme
+            document.documentElement.removeAttribute('data-theme');
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+
+            // Update theme toggle button
+            themeText.textContent = 'Dark Mode';
+            themeToggleBtn.innerHTML = `
+                <span id="theme-text">Dark Mode</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+            `;
+
+            // Update theme-specific elements
+            themeElements.forEach(el => {
+                const classes = el.className.split(' ');
+                classes.forEach(cls => {
+                    if (cls.startsWith('dark:')) {
+                        const darkClass = cls.replace('dark:', '');
+                        el.classList.add(darkClass);
+                    }
+                    if (cls.startsWith('light:')) {
+                        const lightClass = cls.replace('light:', '');
+                        el.classList.remove(lightClass);
+                    }
+                });
+            });
+
+            // Update model dropdown text color
+            const modelOptions = document.querySelectorAll('.model-option');
+            modelOptions.forEach(option => {
+                option.classList.add('text-white');
+                option.classList.remove('text-gray-800');
+            });
+        }
     }
 
     // Simple markdown formatter
