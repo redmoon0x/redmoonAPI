@@ -170,6 +170,11 @@ def index():
                            CHAT_ENDPOINT=CHAT_ENDPOINT,
                            CLEAR_ENDPOINT=CLEAR_ENDPOINT)
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Render."""
+    return jsonify({"status": "healthy"})
+
 @app.route(f'/api/{MODELS_ENDPOINT}', methods=['GET'])
 @csrf.exempt
 def get_models():

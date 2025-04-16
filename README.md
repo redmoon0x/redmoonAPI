@@ -58,9 +58,9 @@ To deploy your own instance of the web interface on Render's free tier:
 4. Connect your GitHub account and select this repository
 5. Use the following settings:
    - Name: redmoon0x (or any name you prefer)
-   - Environment: Python
+   - Runtime: Python
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
+   - Start Command: `gunicorn app:app --bind 0.0.0.0:$PORT`
 6. Click "Create Web Service"
 
 The application will be deployed and available at a URL provided by Render.
