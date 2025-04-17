@@ -67,27 +67,6 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
 
-# Disable Flask logging
-import logging
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-
-# Add CSRF protection
-from flask_wtf.csrf import CSRFProtect
-csrf = CSRFProtect(app)
-
-# Generate random endpoint names to make reverse engineering harder
-import random
-import string
-
-def generate_random_endpoint():
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-
-# Random endpoint names
-MODELS_ENDPOINT = generate_random_endpoint()
-CHAT_ENDPOINT = generate_random_endpoint()
-CLEAR_ENDPOINT = generate_random_endpoint()
-
 # Define available models
 AVAILABLE_MODELS = []
 
@@ -164,25 +143,14 @@ def get_model_instance(model_id):
 @app.route('/')
 def index():
     """Render the main page."""
-    return render_template('index.html',
-                           models=AVAILABLE_MODELS,
-                           MODELS_ENDPOINT=MODELS_ENDPOINT,
-                           CHAT_ENDPOINT=CHAT_ENDPOINT,
-                           CLEAR_ENDPOINT=CLEAR_ENDPOINT)
+    return render_template('index.html', models=AVAILABLE_MODELS)
 
-@app.route('/health')
-def health_check():
-    """Health check endpoint for Render."""
-    return jsonify({"status": "healthy"})
-
-@app.route(f'/api/{MODELS_ENDPOINT}', methods=['GET'])
-@csrf.exempt
+@app.route('/api/models', methods=['GET'])
 def get_models():
     """Get the list of available models."""
     return jsonify(AVAILABLE_MODELS)
 
-@app.route(f'/api/{CHAT_ENDPOINT}', methods=['POST'])
-@csrf.exempt
+@app.route('/api/chat', methods=['POST'])
 def chat():
     """Send a message to the selected model."""
     data = request.json
@@ -254,8 +222,7 @@ def chat():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route(f'/api/{CLEAR_ENDPOINT}', methods=['POST'])
-@csrf.exempt
+@app.route('/api/clear', methods=['POST'])
 def clear_history():
     """Clear the conversation history for the selected model."""
     data = request.json
@@ -272,6 +239,4 @@ def clear_history():
     return jsonify({"error": "Cannot clear history for this model"}), 400
 
 if __name__ == '__main__':
-    # Run in debug mode locally, but not in production
-    is_prod = os.environ.get('RENDER', False)
-    app.run(debug=not is_prod, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    app.run(debug=True)

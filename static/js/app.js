@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Send to API
-        fetch(`/api/${CHAT_ENDPOINT}`, {
+        fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearChatMessages();
 
         // Clear on server
-        fetch(`/api/${CLEAR_ENDPOINT}`, {
+        fetch('/api/clear', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
