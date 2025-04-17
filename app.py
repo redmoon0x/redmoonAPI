@@ -44,6 +44,11 @@ except ImportError:
     FluxStandard = None
 
 try:
+    from mitraai_image import MitraAI
+except ImportError:
+    MitraAI = None
+
+try:
     from imagegen import generate_image as pixelmuse_generate
 except ImportError:
     pixelmuse_generate = None
@@ -127,6 +132,10 @@ if FluxStandard is not None:
 # MagicStudio model
 if magicstudio_generate is not None:
     AVAILABLE_IMAGE_MODELS.append({"id": "magicstudio", "name": "MagicStudio", "provider": "magicstudio"})
+
+# MitraAI model
+if MitraAI is not None:
+    AVAILABLE_IMAGE_MODELS.append({"id": "mitraai", "name": "MitraAI Image Generator", "provider": "mitraai"})
 
 # Model instances cache
 model_instances = {}
@@ -375,6 +384,23 @@ def generate_image():
                 })
             else:
                 return jsonify({"error": f"Failed to generate image with MagicStudio: {response.text}"}), 500
+
+        elif provider == 'mitraai':
+            # Create the MitraAI client
+            client = MitraAI()
+
+            # Generate the image but don't save it to disk
+            result = client.client.generate_image(
+                prompt=prompt,
+                save_path=None  # Don't save to disk
+            )
+
+            # Check if we got a result with an image URL
+            if isinstance(result, dict) and 'image_url' in result:
+                # Return the image URL
+                return jsonify({"image_url": result['image_url']})
+            else:
+                return jsonify({"error": "Failed to generate image with MitraAI"}), 500
         else:
             return jsonify({"error": f"Unknown provider: {provider}"}), 400
 

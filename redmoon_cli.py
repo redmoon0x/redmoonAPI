@@ -48,6 +48,11 @@ except ImportError:
     FluxStandard = None
 
 try:
+    from mitraai_image import MitraAI
+except ImportError:
+    MitraAI = None
+
+try:
     from imagegen import generate_image as pixelmuse_generate
 except ImportError:
     pixelmuse_generate = None
@@ -172,7 +177,8 @@ def print_menu():
     print(f"{Fore.MAGENTA}│{Fore.WHITE}  9. {Fore.MAGENTA}🎭 {Fore.WHITE}Image Generation (MagicStudio){' ' * (box_width - 37)}│")
     print(f"{Fore.MAGENTA}│{Fore.WHITE} 10. {Fore.MAGENTA}🌄 {Fore.WHITE}Image Generation (Fluently XL){' ' * (box_width - 38)}│")
     print(f"{Fore.MAGENTA}│{Fore.WHITE} 11. {Fore.MAGENTA}✨ {Fore.WHITE}Image Generation (Flux Standard){' ' * (box_width - 40)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE} 12. {Fore.MAGENTA}🔊 {Fore.WHITE}Voice Generation{' ' * (box_width - 25)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 12. {Fore.MAGENTA}🌙 {Fore.WHITE}Image Generation (MitraAI){' ' * (box_width - 35)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 13. {Fore.MAGENTA}🔊 {Fore.WHITE}Voice Generation{' ' * (box_width - 25)}│")
     print(f"{Fore.MAGENTA}│{' ' * (box_width - 2)}│")
     print(f"{Fore.MAGENTA}└{'─' * (box_width - 2)}┘")
 
@@ -181,8 +187,8 @@ def print_menu():
     print(f"{Fore.RED}┌{'─' * (box_width - 2)}┐")
     print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
     print(f"{Fore.RED}│{Fore.WHITE}  0. {Fore.RED}🚪 {Fore.WHITE}Exit{' ' * (box_width - 13)}│")
-    print(f"{Fore.RED}│{Fore.WHITE} 13. {Fore.RED}🧹 {Fore.WHITE}Clear Screen{' ' * (box_width - 21)}│")
-    print(f"{Fore.RED}│{Fore.WHITE} 14. {Fore.RED}❓ {Fore.WHITE}Help{' ' * (box_width - 13)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 14. {Fore.RED}🧹 {Fore.WHITE}Clear Screen{' ' * (box_width - 21)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 15. {Fore.RED}❓ {Fore.WHITE}Help{' ' * (box_width - 13)}│")
     print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
     print(f"{Fore.RED}└{'─' * (box_width - 2)}┘")
 
@@ -192,7 +198,7 @@ def print_menu():
     print(f"\n{Style.BRIGHT}{Fore.BLACK}{Back.WHITE} {status} {Style.RESET_ALL}")
 
 
-def get_user_choice(min_value=0, max_value=14):
+def get_user_choice(min_value=0, max_value=15):
     """Get a valid choice from the user with improved UI."""
     prompt = f"\n{Style.BRIGHT}{Fore.CYAN}┌─ Enter your choice [{min_value}-{max_value}]\n└─❯ {Style.RESET_ALL}"
 
@@ -592,6 +598,40 @@ def run_flux_standard():
         print_colored(f"\nError generating image: {str(e)}", Fore.RED)
 
 
+def run_mitraai_image_generation():
+    """Run the MitraAI image generation service."""
+    if MitraAI is None:
+        print_colored("\nMitraAI image generation module is not available.", Fore.RED)
+        print_colored("Please make sure the 'mitraai_image.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    # Print stylish header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} MITRAAI IMAGE GENERATION {Style.RESET_ALL}")
+
+    # Get prompt from user
+    print_colored("Enter image description:", Fore.YELLOW)
+    prompt = input("> ").strip()
+
+    if not prompt:
+        print_colored("Prompt cannot be empty.", Fore.RED)
+        return
+
+    print_spinner("Generating image with MitraAI...", 1.5, Fore.MAGENTA)
+
+    # Initialize the client
+    client = MitraAI(debug=False)
+
+    try:
+        # Generate the image
+        image_path = client.generate_image(prompt=prompt)
+
+        print_colored("\nImage generated successfully!", Fore.GREEN)
+        print_colored(f"Image saved to: {image_path}", Fore.CYAN)
+    except Exception as e:
+        print_colored(f"\nError generating image: {str(e)}", Fore.RED)
+
+
 def run_voice_generation():
     """Run the voice generation service."""
     if generate_voice is None or download_audio is None:
@@ -845,7 +885,7 @@ def print_help():
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Scira, Qwen, ChatGot, Uncovr, Blackbox AI{' ' * (box_width - 48)}│")
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Mistral Small 3.1 24B, Llama 3.2 3B Akash{' ' * (box_width - 48)}│")
     print(f"{Fore.CYAN}│ {Fore.WHITE}🎨 Generation Services:{' ' * (box_width - 24)}│")
-    print(f"{Fore.CYAN}│   {Fore.WHITE}• Image: PixelMuse, MagicStudio, Fluently XL, Flux Standard{' ' * (box_width - 64)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Image: PixelMuse, MagicStudio, Fluently XL, Flux Standard, MitraAI{' ' * (box_width - 73)}│")
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Voice Generation{' ' * (box_width - 21)}│")
 
     print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
@@ -915,10 +955,12 @@ def main():
         elif choice == 11:
             run_flux_standard()
         elif choice == 12:
-            run_voice_generation()
+            run_mitraai_image_generation()
         elif choice == 13:
-            clear_screen()
+            run_voice_generation()
         elif choice == 14:
+            clear_screen()
+        elif choice == 15:
             print_help()
 
 
