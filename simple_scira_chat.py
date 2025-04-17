@@ -52,22 +52,15 @@ class SciraChat:
         self.conversation_history = []
         self.user_id = f"user-{self._generate_random_id()}"
 
-        # Set up headers
+        # Set up headers - simplified for better compatibility with hosted environments
         self.headers = {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br, zstd",
-            "accept-language": "en-US,en;q=0.6",
+            "accept-encoding": "gzip, deflate",
+            "accept-language": "en-US,en;q=0.9",
             "content-type": "application/json",
             "origin": "https://scira.ai",
             "referer": "https://scira.ai/",
-            "sec-ch-ua": '"Brave";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "sec-gpc": "1",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
         # Set the model
@@ -84,15 +77,26 @@ class SciraChat:
         """Refresh the cookies by visiting the main website."""
         try:
             # Visit the main page to get cookies
-            self.session.get(
+            response = self.session.get(
                 self.base_url,
                 headers={
                     "User-Agent": self.headers["user-agent"],
                     "Accept": "text/html,application/xhtml+xml,application/xml"
-                }
+                },
+                timeout=10  # Add timeout to prevent hanging
             )
-            return True
-        except Exception:
+
+            # Check if we got a successful response
+            if response.status_code == 200:
+                # Print cookies for debugging
+                cookies_dict = dict(self.session.cookies)
+                print(f"Cookies refreshed successfully. Got {len(cookies_dict)} cookies.")
+                return True
+            else:
+                print(f"Failed to refresh cookies. Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"Error refreshing cookies: {str(e)}")
             return False
 
     def set_model(self, model: str):
@@ -152,6 +156,8 @@ class SciraChat:
             "user_id": self.user_id
         }
 
+        print(f"Sending request to {self.api_url} with model {self.model}")
+
         # Try to send the request
         try:
             # Make the request with stream=True to handle chunked responses
@@ -159,39 +165,67 @@ class SciraChat:
                 self.api_url,
                 headers=self.headers,
                 json=payload,
-                stream=True
+                stream=True,
+                timeout=30  # Add timeout to prevent hanging
             )
+
+            print(f"Received response with status code: {response.status_code}")
 
             if response.status_code != 200:
                 if response.status_code in (401, 403):
+                    print("Authentication error. Refreshing cookies and retrying...")
                     # Try to refresh cookies and retry
-                    self._refresh_cookies()
-                    response = self.session.post(
-                        self.api_url,
-                        headers=self.headers,
-                        json=payload,
-                        stream=True
-                    )
-                    if response.status_code != 200:
+                    if self._refresh_cookies():
+                        print("Cookies refreshed. Retrying request...")
+                        response = self.session.post(
+                            self.api_url,
+                            headers=self.headers,
+                            json=payload,
+                            stream=True,
+                            timeout=30
+                        )
+                        print(f"Retry response status code: {response.status_code}")
+                        if response.status_code != 200:
+                            print(f"Retry failed with status code: {response.status_code}")
+                            return None
+                    else:
+                        print("Failed to refresh cookies. Cannot proceed.")
                         return None
                 else:
+                    print(f"Request failed with status code: {response.status_code}")
+                    try:
+                        error_content = response.text
+                        print(f"Error response: {error_content[:200]}...")
+                    except Exception as e:
+                        print(f"Could not read error response: {str(e)}")
                     return None
 
             # Process the streaming response
+            print("Processing streaming response...")
             full_response = self._process_response(response)
 
             # Add the assistant response to history
             if full_response:
+                print(f"Received full response of length: {len(full_response)}")
                 assistant_message = {
                     "role": "assistant",
                     "content": full_response,
                     "parts": [{"type": "text", "text": full_response}]
                 }
                 self.conversation_history.append(assistant_message)
+            else:
+                print("No response content received from the API")
 
             return full_response
 
-        except Exception:
+        except requests.exceptions.Timeout:
+            print("Request timed out. The server took too long to respond.")
+            return None
+        except requests.exceptions.ConnectionError as e:
+            print(f"Connection error: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error during chat request: {str(e)}")
             return None
 
     def _process_response(self, response: requests.Response) -> Optional[str]:
@@ -205,9 +239,13 @@ class SciraChat:
         """
         buffer = ""
         full_response = ""
+        chunk_count = 0
+        line_count = 0
 
         try:
+            print("Starting to process response chunks...")
             for chunk in response.iter_content(chunk_size=1024, decode_unicode=False):
+                chunk_count += 1
                 if not chunk:
                     continue
 
@@ -219,6 +257,7 @@ class SciraChat:
                     # Process each line in the buffer
                     while '\n' in buffer:
                         line, buffer = buffer.split('\n', 1)
+                        line_count += 1
 
                         if not line.strip():
                             continue
@@ -227,25 +266,60 @@ class SciraChat:
                         if ':' in line:
                             prefix, content = line.split(':', 1)
 
+                            # Log the prefix for debugging
+                            if chunk_count <= 3 or line_count <= 5:
+                                print(f"Received line with prefix '{prefix}' (length: {len(content)})")
+
                             # Handle actual message content (0:"Hello...")
                             if prefix == '0':
                                 # Remove quotes if present
                                 if content.startswith('"') and content.endswith('"'):
                                     try:
                                         content = json.loads(content)
-                                    except json.JSONDecodeError:
+                                    except json.JSONDecodeError as e:
+                                        print(f"JSON decode error: {str(e)} for content: {content[:50]}...")
                                         pass
 
                                 full_response += content
-                                print(content, end="", flush=True)
+                                # In web context, don't print to console
+                                # print(content, end="", flush=True)
+                            elif prefix in ('1', '2', '3', '4', '5', '6', '7', '8', '9'):
+                                # These are other message types that might contain useful information
+                                try:
+                                    if content.strip():
+                                        parsed = json.loads(content) if content.strip()[0] in '{[' else content
+                                        print(f"Additional data (prefix {prefix}): {str(parsed)[:100]}...")
+                                except Exception:
+                                    pass
 
-                except UnicodeDecodeError:
+                except UnicodeDecodeError as e:
+                    print(f"Unicode decode error: {str(e)}")
                     continue
 
-            print()  # Add a newline at the end
+            print(f"Finished processing response. Received {chunk_count} chunks, {line_count} lines.")
+            print(f"Final response length: {len(full_response)} characters")
+
+            # If we got no response but had chunks, this might indicate a parsing issue
+            if not full_response and chunk_count > 0:
+                print("Warning: Received chunks but couldn't extract a response. Possible format change.")
+                # Try to extract anything that looks like a response from the buffer
+                if buffer:
+                    print(f"Remaining buffer (first 100 chars): {buffer[:100]}...")
+                    # Try to find any content in quotes that might be the response
+                    import re
+                    quoted_content = re.findall(r'"([^"]*)"', buffer)
+                    if quoted_content:
+                        print(f"Found {len(quoted_content)} quoted strings in buffer")
+                        # Use the longest quoted string as a fallback response
+                        longest = max(quoted_content, key=len)
+                        if len(longest) > 10:  # Only use if it's reasonably long
+                            print(f"Using longest quoted string as fallback response: {longest[:50]}...")
+                            full_response = longest
+
             return full_response
 
-        except Exception:
+        except Exception as e:
+            print(f"Error processing response: {str(e)}")
             return None
 
     def clear_history(self):

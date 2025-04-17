@@ -202,6 +202,16 @@ def chat():
         if model_id.startswith("scira-"):
             instance = get_model_instance(model_id)
             response = instance.chat(message)
+            # Check if we got an empty response from Scira
+            if response is None or response.strip() == "":
+                print(f"Empty response from Scira model {model_id}. Refreshing cookies and retrying...")
+                # Try to refresh cookies and retry once
+                if hasattr(instance, '_refresh_cookies'):
+                    instance._refresh_cookies()
+                    # Try again with a fresh request
+                    response = instance.chat(message)
+                    if response is None or response.strip() == "":
+                        return jsonify({"error": "Scira model returned an empty response after retry. Please try again later."}), 500
         elif model_id == "qwen":
             instance = get_model_instance(model_id)
             result = instance.send_message(message)
@@ -386,6 +396,99 @@ def clear_history():
         return jsonify({"success": True})
 
     return jsonify({"error": "Cannot clear history for this model"}), 400
+
+@app.route('/api/debug/scira', methods=['POST'])
+def debug_scira():
+    """Debug endpoint for Scira models."""
+    data = request.json
+    model_id = data.get('model_id', 'scira-default')
+    message = data.get('message', 'Hello, can you respond with a short test message?')
+
+    debug_info = {
+        "environment": {
+            "is_render": os.environ.get('RENDER', 'false'),
+            "python_version": sys.version,
+            "available_models": AVAILABLE_MODELS
+        }
+    }
+
+    # Check if SciraChat is available
+    if SciraChat is None:
+        debug_info["error"] = "SciraChat module is not available"
+        return jsonify(debug_info), 500
+
+    try:
+        # Create a new instance for testing
+        model_type = model_id.replace('scira-', '') if model_id.startswith('scira-') else 'default'
+        test_instance = SciraChat(model=model_type)
+        debug_info["instance_created"] = True
+        debug_info["model_type"] = model_type
+
+        # Try to get cookies
+        cookies_result = test_instance._refresh_cookies()
+        debug_info["cookies_refreshed"] = cookies_result
+
+        # Try to send a message
+        try:
+            response = test_instance.chat(message)
+            debug_info["response_received"] = response is not None
+            debug_info["response"] = response if response else "No response"
+        except Exception as e:
+            debug_info["chat_error"] = str(e)
+            debug_info["chat_error_type"] = type(e).__name__
+
+    except Exception as e:
+        debug_info["error"] = str(e)
+        debug_info["error_type"] = type(e).__name__
+
+    return jsonify(debug_info)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for Render."""
+    return jsonify({"status": "ok"})
+
+@app.route('/api/test-scira', methods=['GET'])
+def test_scira():
+    """Test endpoint for Scira models."""
+    if SciraChat is None:
+        return jsonify({"error": "SciraChat module is not available"}), 500
+
+    results = {}
+    test_message = "Hello, can you give me a very short response?"
+
+    # Test each Scira model
+    for model_id in ["scira-default", "scira-grok", "scira-claude", "scira-vision"]:
+        try:
+            # Create a fresh instance for each test
+            model_type = model_id.replace('scira-', '')
+            test_instance = SciraChat(model=model_type)
+
+            # Try to get cookies
+            cookies_result = test_instance._refresh_cookies()
+
+            # Try to send a message
+            response = test_instance.chat(test_message)
+
+            results[model_id] = {
+                "cookies_refreshed": cookies_result,
+                "response_received": response is not None,
+                "response_length": len(response) if response else 0,
+                "response_preview": response[:100] + "..." if response and len(response) > 100 else response
+            }
+        except Exception as e:
+            results[model_id] = {
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+
+    return jsonify({
+        "environment": {
+            "is_render": os.environ.get('RENDER', 'false'),
+            "python_version": sys.version
+        },
+        "results": results
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
