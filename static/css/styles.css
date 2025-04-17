@@ -66,7 +66,7 @@ body {
 }
 
 /* Auto-resize textarea */
-#message-input {
+#message-input, #image-prompt, #negative-prompt {
     overflow: hidden;
     resize: none;
     min-height: 44px;
@@ -302,4 +302,42 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
     transform: translateX(16px);
+}
+
+/* Image generation styles */
+.aspect-ratio-btn.selected {
+    background-color: var(--message-user-bg);
+    color: white;
+}
+
+#image-result {
+    transition: all 0.3s ease;
+}
+
+.generated-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.3s ease;
+}
+
+#image-loading {
+    transition: all 0.3s ease;
+}
+
+.image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Tab styling */
+.tab-active {
+    border-bottom: 2px solid var(--message-user-bg);
+    color: var(--message-user-bg);
+    font-weight: 500;
 }

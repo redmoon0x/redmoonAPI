@@ -7,12 +7,36 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Additional styles for image generation */
+        .tab-active {
+            border-bottom: 2px solid #8b5cf6;
+            color: #8b5cf6;
+        }
+        .image-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .generated-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body class="min-h-screen flex flex-col">
     <div class="flex flex-col min-h-screen">
         <!-- Header with model selector -->
         <header class="p-4 flex justify-between items-center">
-            <div class="relative inline-block text-left">
+            <!-- Mode tabs (Chat/Image) -->
+            <div class="flex space-x-4">
+                <button id="chat-tab" class="px-3 py-2 text-sm font-medium tab-active transition-colors duration-300">Chat</button>
+                <button id="image-tab" class="px-3 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors duration-300">Image</button>
+            </div>
+
+            <!-- Chat model selector -->
+            <div id="chat-model-selector" class="relative inline-block text-left">
                 <div>
                     <button id="model-selector-btn" type="button" class="inline-flex justify-between items-center w-48 rounded-full px-4 py-2 bg-purple-900 dark:bg-purple-900 light:bg-purple-600 text-sm font-medium text-white hover:bg-purple-800 dark:hover:bg-purple-800 light:hover:bg-purple-700 focus:outline-none transition-colors duration-300">
                         <span id="selected-model-name">Select Model</span>
@@ -39,6 +63,32 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Image model selector (hidden by default) -->
+            <div id="image-model-selector" class="relative inline-block text-left hidden">
+                <div>
+                    <button id="image-model-selector-btn" type="button" class="inline-flex justify-between items-center w-48 rounded-full px-4 py-2 bg-purple-900 dark:bg-purple-900 light:bg-purple-600 text-sm font-medium text-white hover:bg-purple-800 dark:hover:bg-purple-800 light:hover:bg-purple-700 focus:outline-none transition-colors duration-300">
+                        <span id="selected-image-model-name">Select Image Model</span>
+                        <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="image-model-dropdown" class="hidden origin-top-left absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-gray-800 dark:bg-gray-800 light:bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10 transition-colors duration-300">
+                    <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="image-model-selector-btn">
+                        {% for model in image_models %}
+                        <button
+                            class="image-model-option flex items-center justify-between w-full px-4 py-2 text-sm text-white dark:text-white light:text-gray-800 hover:bg-gray-700 dark:hover:bg-gray-700 light:hover:bg-gray-100 transition-colors duration-300"
+                            role="menuitem"
+                            data-model-id="{{ model.id }}"
+                            data-model-name="{{ model.name }}"
+                            data-provider="{{ model.provider }}">
+                            <span>{{ model.name }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             <button id="menu-btn" class="text-white dark:text-white light:text-gray-800 focus:outline-none transition-colors duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -57,38 +107,108 @@
                 <p id="model-status" class="text-gray-400 text-sm">Please select a model to start chatting</p>
             </div>
 
-            <!-- Chat messages will appear here -->
-            <div id="chat-container" class="w-full max-w-4xl hidden flex-grow mb-4 space-y-4 px-2 pb-16">
-                <!-- Messages will be inserted here by JavaScript -->
+            <!-- Chat interface -->
+            <div id="chat-interface" class="w-full max-w-4xl">
+                <!-- Chat messages will appear here -->
+                <div id="chat-container" class="w-full hidden flex-grow mb-4 space-y-4 px-2 pb-16">
+                    <!-- Messages will be inserted here by JavaScript -->
+                </div>
+
+                <!-- Input area -->
+                <div id="input-container" class="w-full hidden sticky bottom-0 z-10 py-4 px-2">
+                    <div class="relative">
+                        <textarea
+                            id="message-input"
+                            class="w-full px-4 py-3 pr-12 bg-gray-800 dark:bg-gray-800 light:bg-white text-white dark:text-white light:text-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-500 light:focus:ring-purple-400 resize-none transition-colors duration-300 border border-transparent dark:border-transparent light:border-gray-200"
+                            placeholder="Send a message"
+                            rows="1"></textarea>
+                        <button
+                            id="send-btn"
+                            class="absolute right-2 bottom-2 p-2 rounded-full bg-purple-600 dark:bg-purple-600 light:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-700 light:hover:bg-purple-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-2 px-2">
+                        <div id="websearch-toggle-container" class="hidden">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="websearch-toggle" class="sr-only peer">
+                                <div class="relative w-9 h-5 bg-gray-700 dark:bg-gray-700 light:bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 transition-colors duration-300"></div>
+                                <span class="ml-2 text-gray-500 dark:text-gray-500 light:text-gray-600 transition-colors duration-300">Web Search</span>
+                            </label>
+                        </div>
+                        <button id="clear-btn" class="text-gray-500 dark:text-gray-500 light:text-gray-600 hover:text-white dark:hover:text-white light:hover:text-gray-900 hidden transition-colors duration-300">
+                            Clear Chat
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Input area -->
-            <div id="input-container" class="w-full max-w-4xl hidden sticky bottom-0 z-10 py-4 px-2">
-                <div class="relative">
-                    <textarea
-                        id="message-input"
-                        class="w-full px-4 py-3 pr-12 bg-gray-800 dark:bg-gray-800 light:bg-white text-white dark:text-white light:text-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-500 light:focus:ring-purple-400 resize-none transition-colors duration-300 border border-transparent dark:border-transparent light:border-gray-200"
-                        placeholder="Send a message"
-                        rows="1"></textarea>
+            <!-- Image generation interface -->
+            <div id="image-interface" class="w-full max-w-4xl hidden">
+                <!-- Image generation form -->
+                <div id="image-form" class="w-full mb-4 p-4 bg-gray-800 dark:bg-gray-800 light:bg-white rounded-lg shadow-md transition-colors duration-300">
+                    <div class="mb-4">
+                        <label for="image-prompt" class="block text-sm font-medium text-gray-300 dark:text-gray-300 light:text-gray-700 mb-2 transition-colors duration-300">Image Description</label>
+                        <textarea
+                            id="image-prompt"
+                            class="w-full px-4 py-3 bg-gray-700 dark:bg-gray-700 light:bg-gray-100 text-white dark:text-white light:text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-500 light:focus:ring-purple-400 resize-none transition-colors duration-300"
+                            placeholder="Describe the image you want to generate..."
+                            rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="negative-prompt" class="block text-sm font-medium text-gray-300 dark:text-gray-300 light:text-gray-700 mb-2 transition-colors duration-300">Negative Prompt (Optional)</label>
+                        <textarea
+                            id="negative-prompt"
+                            class="w-full px-4 py-3 bg-gray-700 dark:bg-gray-700 light:bg-gray-100 text-white dark:text-white light:text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-500 light:focus:ring-purple-400 resize-none transition-colors duration-300"
+                            placeholder="Elements to exclude from the image..."
+                            rows="2"></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 dark:text-gray-300 light:text-gray-700 mb-2 transition-colors duration-300">Aspect Ratio</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="aspect-ratio-btn py-2 px-3 bg-gray-700 dark:bg-gray-700 light:bg-gray-200 text-white dark:text-white light:text-gray-800 rounded hover:bg-gray-600 dark:hover:bg-gray-600 light:hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-300" data-ratio="1:1">1:1 (Square)</button>
+                            <button class="aspect-ratio-btn py-2 px-3 bg-gray-700 dark:bg-gray-700 light:bg-gray-200 text-white dark:text-white light:text-gray-800 rounded hover:bg-gray-600 dark:hover:bg-gray-600 light:hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-300" data-ratio="16:9">16:9 (Landscape)</button>
+                            <button class="aspect-ratio-btn py-2 px-3 bg-gray-700 dark:bg-gray-700 light:bg-gray-200 text-white dark:text-white light:text-gray-800 rounded hover:bg-gray-600 dark:hover:bg-gray-600 light:hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-300" data-ratio="9:16">9:16 (Portrait)</button>
+                        </div>
+                    </div>
+
                     <button
-                        id="send-btn"
-                        class="absolute right-2 bottom-2 p-2 rounded-full bg-purple-600 dark:bg-purple-600 light:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-700 light:hover:bg-purple-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
-                        </svg>
+                        id="generate-image-btn"
+                        class="w-full py-3 bg-purple-600 dark:bg-purple-600 light:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 light:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300">
+                        Generate Image
                     </button>
                 </div>
-                <div class="flex justify-between text-xs text-gray-500 mt-2 px-2">
-                    <div id="websearch-toggle-container" class="hidden">
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="websearch-toggle" class="sr-only peer">
-                            <div class="relative w-9 h-5 bg-gray-700 dark:bg-gray-700 light:bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 transition-colors duration-300"></div>
-                            <span class="ml-2 text-gray-500 dark:text-gray-500 light:text-gray-600 transition-colors duration-300">Web Search</span>
-                        </label>
+
+                <!-- Generated image display -->
+                <div id="image-result" class="w-full mb-4 hidden">
+                    <div class="p-4 bg-gray-800 dark:bg-gray-800 light:bg-white rounded-lg shadow-md transition-colors duration-300">
+                        <h3 class="text-lg font-medium text-white dark:text-white light:text-gray-800 mb-4 transition-colors duration-300">Generated Image</h3>
+                        <div class="image-container flex justify-center mb-4">
+                            <img id="generated-image" class="generated-image" src="" alt="Generated image">
+                        </div>
+                        <div class="flex justify-between">
+                            <button id="new-image-btn" class="py-2 px-4 bg-gray-700 dark:bg-gray-700 light:bg-gray-200 text-white dark:text-white light:text-gray-800 rounded hover:bg-gray-600 dark:hover:bg-gray-600 light:hover:bg-gray-300 focus:outline-none transition-colors duration-300">
+                                Generate New Image
+                            </button>
+                            <a id="download-image-btn" href="#" download="generated-image" class="py-2 px-4 bg-purple-600 dark:bg-purple-600 light:bg-purple-500 text-white rounded hover:bg-purple-700 dark:hover:bg-purple-700 light:hover:bg-purple-600 focus:outline-none transition-colors duration-300">
+                                Download Image
+                            </a>
+                        </div>
                     </div>
-                    <button id="clear-btn" class="text-gray-500 dark:text-gray-500 light:text-gray-600 hover:text-white dark:hover:text-white light:hover:text-gray-900 hidden transition-colors duration-300">
-                        Clear Chat
-                    </button>
+                </div>
+
+                <!-- Loading indicator -->
+                <div id="image-loading" class="w-full mb-4 hidden">
+                    <div class="p-4 bg-gray-800 dark:bg-gray-800 light:bg-white rounded-lg shadow-md transition-colors duration-300">
+                        <div class="flex flex-col items-center justify-center py-8">
+                            <div class="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p class="text-white dark:text-white light:text-gray-800 transition-colors duration-300">Generating your image...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -121,7 +241,7 @@
                     </button>
                 </div>
                 <div>
-                    <h3 class="text-sm font-medium text-gray-400 dark:text-gray-400 light:text-gray-600 mb-2">Models</h3>
+                    <h3 class="text-sm font-medium text-gray-400 dark:text-gray-400 light:text-gray-600 mb-2">Chat Models</h3>
                     <div class="text-sm text-gray-300 dark:text-gray-300 light:text-gray-600 space-y-2">
                         {% for model in models %}
                         <div class="flex justify-between items-center">
@@ -129,6 +249,16 @@
                             {% if model.websearch %}
                             <span class="text-xs text-blue-400">Web Search</span>
                             {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="text-sm font-medium text-gray-400 dark:text-gray-400 light:text-gray-600 mb-2">Image Models</h3>
+                    <div class="text-sm text-gray-300 dark:text-gray-300 light:text-gray-600 space-y-2">
+                        {% for model in image_models %}
+                        <div class="flex justify-between items-center">
+                            <span>{{ model.name }}</span>
                         </div>
                         {% endfor %}
                     </div>

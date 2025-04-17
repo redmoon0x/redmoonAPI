@@ -8,7 +8,10 @@ A Flask web application for interacting with various AI models.
 import os
 import sys
 import json
-from flask import Flask, render_template, request, jsonify, session
+import base64
+import io
+import requests
+from flask import Flask, render_template, request, jsonify, session, send_file, Response
 from flask_cors import CORS
 
 # Import model clients
@@ -102,6 +105,29 @@ if MistralSmall is not None:
 if LlamaAkash is not None:
     AVAILABLE_MODELS.append({"id": "llama-akash", "name": "Llama 3.2 3B Akash", "websearch": False})
 
+# Define available image models
+AVAILABLE_IMAGE_MODELS = []
+
+# PixelMuse models
+if pixelmuse_generate is not None:
+    AVAILABLE_IMAGE_MODELS.extend([
+        {"id": "pixelmuse-flux", "name": "PixelMuse Flux Schnell", "provider": "pixelmuse"},
+        {"id": "pixelmuse-imagen-fast", "name": "PixelMuse Imagen 3 Fast", "provider": "pixelmuse"},
+        {"id": "pixelmuse-imagen", "name": "PixelMuse Imagen 3", "provider": "pixelmuse"},
+        {"id": "pixelmuse-recraft", "name": "PixelMuse Recraft V3", "provider": "pixelmuse"},
+    ])
+
+# Venice.ai image models
+if FluentlyXL is not None:
+    AVAILABLE_IMAGE_MODELS.append({"id": "fluently-xl", "name": "Fluently XL Final", "provider": "venice"})
+
+if FluxStandard is not None:
+    AVAILABLE_IMAGE_MODELS.append({"id": "flux-standard", "name": "Flux Standard", "provider": "venice"})
+
+# MagicStudio model
+if magicstudio_generate is not None:
+    AVAILABLE_IMAGE_MODELS.append({"id": "magicstudio", "name": "MagicStudio", "provider": "magicstudio"})
+
 # Model instances cache
 model_instances = {}
 
@@ -143,12 +169,17 @@ def get_model_instance(model_id):
 @app.route('/')
 def index():
     """Render the main page."""
-    return render_template('index.html', models=AVAILABLE_MODELS)
+    return render_template('index.html', models=AVAILABLE_MODELS, image_models=AVAILABLE_IMAGE_MODELS)
 
 @app.route('/api/models', methods=['GET'])
 def get_models():
     """Get the list of available models."""
     return jsonify(AVAILABLE_MODELS)
+
+@app.route('/api/image-models', methods=['GET'])
+def get_image_models():
+    """Get the list of available image generation models."""
+    return jsonify(AVAILABLE_IMAGE_MODELS)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -221,6 +252,124 @@ def chat():
         return jsonify({"response": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/generate-image', methods=['POST'])
+def generate_image():
+    """Generate an image using the selected model."""
+    data = request.json
+    model_id = data.get('model_id')
+    prompt = data.get('prompt')
+    aspect_ratio = data.get('aspect_ratio', '1:1')
+    negative_prompt = data.get('negative_prompt', '')
+
+    if not model_id or not prompt:
+        return jsonify({"error": "Missing model_id or prompt"}), 400
+
+    # Find the model in the available image models
+    model_info = next((m for m in AVAILABLE_IMAGE_MODELS if m['id'] == model_id), None)
+    if not model_info:
+        return jsonify({"error": f"Image model {model_id} not found"}), 404
+
+    try:
+        # Handle the image generation based on the provider
+        provider = model_info.get('provider')
+
+        if provider == 'pixelmuse':
+            # Map model_id to PixelMuse model name
+            model_map = {
+                "pixelmuse-flux": "flux-schnell",
+                "pixelmuse-imagen-fast": "imagen-3-fast",
+                "pixelmuse-imagen": "imagen-3",
+                "pixelmuse-recraft": "recraft-v3"
+            }
+            model = model_map.get(model_id)
+
+            # Generate the image
+            result = pixelmuse_generate(
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                model=model
+            )
+
+            if result and 'output' in result:
+                # Return the image URL
+                return jsonify({"image_url": result['output']})
+            else:
+                return jsonify({"error": "Failed to generate image with PixelMuse"}), 500
+
+        elif provider == 'venice':
+            # Create the appropriate Venice client
+            if model_id == 'fluently-xl':
+                client = FluentlyXL()
+            elif model_id == 'flux-standard':
+                client = FluxStandard()
+            else:
+                return jsonify({"error": f"Unknown Venice model: {model_id}"}), 400
+
+            # Generate the image but don't save it to disk
+            image_bytes = client.client.generate_image(
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                negative_prompt=negative_prompt,
+                save_path=None  # Don't save to disk
+            )
+
+            # Convert image bytes to base64 for embedding in response
+            if isinstance(image_bytes, bytes):
+                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+                return jsonify({
+                    "image_data": encoded_image,
+                    "content_type": "image/webp"
+                })
+            else:
+                return jsonify({"error": "Failed to generate image with Venice"}), 500
+
+        elif provider == 'magicstudio':
+            # For MagicStudio, we need to modify the main function to return image data
+            # instead of saving to disk
+            url = "https://ai-api.magicstudio.com/api/ai-art-generator"
+            headers = {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "en-US,en;q=0.7",
+                "origin": "https://magicstudio.com",
+                "referer": "https://magicstudio.com/",
+                "sec-ch-ua": "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Brave\";v=\"134\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"Windows\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "sec-gpc": "1",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+            }
+
+            import time
+            data = {
+                "prompt": prompt,
+                "output_format": "bytes",
+                "user_profile_id": "null",
+                "anonymous_user_id": "bbc381a1-0924-4b70-a08a-64508b871262",
+                "request_timestamp": str(time.time()),
+                "user_is_subscribed": "false",
+                "client_id": "pSgX7WgjukXCBoYwDM8G8GLnRRkvAoJlqa5eAVvj95o"
+            }
+
+            response = requests.post(url, headers=headers, data=data)
+
+            if response.status_code == 200:
+                # Convert image bytes to base64 for embedding in response
+                encoded_image = base64.b64encode(response.content).decode('utf-8')
+                return jsonify({
+                    "image_data": encoded_image,
+                    "content_type": "image/png"
+                })
+            else:
+                return jsonify({"error": f"Failed to generate image with MagicStudio: {response.text}"}), 500
+        else:
+            return jsonify({"error": f"Unknown provider: {provider}"}), 400
+
+    except Exception as e:
+        return jsonify({"error": f"Error generating image: {str(e)}"}), 500
 
 @app.route('/api/clear', methods=['POST'])
 def clear_history():
