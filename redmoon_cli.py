@@ -73,6 +73,11 @@ try:
 except ImportError:
     blackbox_request = None
 
+try:
+    from phi4_chat import Phi4ChatClient
+except ImportError:
+    Phi4ChatClient = None
+
 
 def print_header():
     """Print the application header with ASCII art."""
@@ -166,6 +171,7 @@ def print_menu():
     print(f"{Fore.CYAN}│{Fore.WHITE}  5. {Fore.CYAN}⚡ {Fore.WHITE}Blackbox AI{' ' * (box_width - 19)}│")
     print(f"{Fore.CYAN}│{Fore.WHITE}  6. {Fore.CYAN}🧠 {Fore.WHITE}Mistral Small 3.1 24B{' ' * (box_width - 29)}│")
     print(f"{Fore.CYAN}│{Fore.WHITE}  7. {Fore.CYAN}🦙 {Fore.WHITE}Llama 3.2 3B Akash{' ' * (box_width - 26)}│")
+    print(f"{Fore.CYAN}│{Fore.WHITE}  8. {Fore.CYAN}🔷 {Fore.WHITE}Phi 4 Chat{' ' * (box_width - 18)}│")
     print(f"{Fore.CYAN}│{' ' * (box_width - 2)}│")
     print(f"{Fore.CYAN}└{'─' * (box_width - 2)}┘")
 
@@ -173,12 +179,12 @@ def print_menu():
     print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.MAGENTA} 🎨 GENERATION SERVICES {Style.RESET_ALL}")
     print(f"{Fore.MAGENTA}┌{'─' * (box_width - 2)}┐")
     print(f"{Fore.MAGENTA}│{' ' * (box_width - 2)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE}  8. {Fore.MAGENTA}🖼️ {Fore.WHITE}Image Generation (PixelMuse){' ' * (box_width - 36)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE}  9. {Fore.MAGENTA}🎭 {Fore.WHITE}Image Generation (MagicStudio){' ' * (box_width - 37)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE} 10. {Fore.MAGENTA}🌄 {Fore.WHITE}Image Generation (Fluently XL){' ' * (box_width - 38)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE} 11. {Fore.MAGENTA}✨ {Fore.WHITE}Image Generation (Flux Standard){' ' * (box_width - 40)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE} 12. {Fore.MAGENTA}🌙 {Fore.WHITE}Image Generation (MitraAI){' ' * (box_width - 35)}│")
-    print(f"{Fore.MAGENTA}│{Fore.WHITE} 13. {Fore.MAGENTA}🔊 {Fore.WHITE}Voice Generation{' ' * (box_width - 25)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE}  9. {Fore.MAGENTA}🖼️ {Fore.WHITE}Image Generation (PixelMuse){' ' * (box_width - 36)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 10. {Fore.MAGENTA}🎭 {Fore.WHITE}Image Generation (MagicStudio){' ' * (box_width - 37)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 11. {Fore.MAGENTA}🌄 {Fore.WHITE}Image Generation (Fluently XL){' ' * (box_width - 38)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 12. {Fore.MAGENTA}✨ {Fore.WHITE}Image Generation (Flux Standard){' ' * (box_width - 40)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 13. {Fore.MAGENTA}🌙 {Fore.WHITE}Image Generation (MitraAI){' ' * (box_width - 35)}│")
+    print(f"{Fore.MAGENTA}│{Fore.WHITE} 14. {Fore.MAGENTA}🔊 {Fore.WHITE}Voice Generation{' ' * (box_width - 25)}│")
     print(f"{Fore.MAGENTA}│{' ' * (box_width - 2)}│")
     print(f"{Fore.MAGENTA}└{'─' * (box_width - 2)}┘")
 
@@ -187,8 +193,8 @@ def print_menu():
     print(f"{Fore.RED}┌{'─' * (box_width - 2)}┐")
     print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
     print(f"{Fore.RED}│{Fore.WHITE}  0. {Fore.RED}🚪 {Fore.WHITE}Exit{' ' * (box_width - 13)}│")
-    print(f"{Fore.RED}│{Fore.WHITE} 14. {Fore.RED}🧹 {Fore.WHITE}Clear Screen{' ' * (box_width - 21)}│")
-    print(f"{Fore.RED}│{Fore.WHITE} 15. {Fore.RED}❓ {Fore.WHITE}Help{' ' * (box_width - 13)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 15. {Fore.RED}🧹 {Fore.WHITE}Clear Screen{' ' * (box_width - 21)}│")
+    print(f"{Fore.RED}│{Fore.WHITE} 16. {Fore.RED}❓ {Fore.WHITE}Help{' ' * (box_width - 13)}│")
     print(f"{Fore.RED}│{' ' * (box_width - 2)}│")
     print(f"{Fore.RED}└{'─' * (box_width - 2)}┘")
 
@@ -198,7 +204,7 @@ def print_menu():
     print(f"\n{Style.BRIGHT}{Fore.BLACK}{Back.WHITE} {status} {Style.RESET_ALL}")
 
 
-def get_user_choice(min_value=0, max_value=15):
+def get_user_choice(min_value=0, max_value=16):
     """Get a valid choice from the user with improved UI."""
     prompt = f"\n{Style.BRIGHT}{Fore.CYAN}┌─ Enter your choice [{min_value}-{max_value}]\n└─❯ {Style.RESET_ALL}"
 
@@ -815,6 +821,52 @@ def run_llama_akash():
         print(response)
 
 
+def run_phi4_chat():
+    """Run the Phi4 Chat client."""
+    if Phi4ChatClient is None:
+        print_colored("\nPhi4 Chat module is not available.", Fore.RED)
+        print_colored("Please make sure the 'phi4_chat.py' module is in the same directory.", Fore.YELLOW)
+        input("\nPress Enter to return to the main menu...")
+        return
+
+    # Create chat client
+    client = Phi4ChatClient()
+
+    # Print header
+    print(f"\n{Style.BRIGHT}{Fore.WHITE}{Back.BLUE} PHI4 CHAT {Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Type 'exit' to return to the main menu, 'clear' to clear history{Style.RESET_ALL}")
+
+    # Main chat loop
+    while True:
+        print("\n" + "="*50)
+        print_colored("You:", Fore.GREEN, Style.BRIGHT)
+        message = input("> ").strip()
+
+        if not message:
+            continue
+
+        if message.lower() in ('exit', 'quit', 'q', 'back'):
+            break
+
+        if message.lower() == 'clear':
+            client.clear_history()
+            print_colored("Chat history cleared. Starting new conversation.", Fore.YELLOW)
+            continue
+
+        # Send the message to the API
+        print_spinner("Phi4 is thinking...", 1.5, Fore.YELLOW)
+
+        # Get the response
+        print_colored("Phi4:", Fore.CYAN, Style.BRIGHT)
+        response = client.send_message(message)
+
+        if not response or response.startswith("Error:"):
+            print_colored("Failed to get a response. Please try again.", Fore.RED)
+            continue
+
+        # No need to print the response here as it's already printed in real-time by the client
+
+
 def print_help():
     """Print help information."""
     help_text = """
@@ -824,7 +876,7 @@ def print_help():
     This is a comprehensive command-line interface for interacting with various AI services.
 
     Available Services:
-    - Chat Services: Scira, Qwen, ChatGot, Uncovr, Blackbox AI, Mistral Small 3.1 24B, Llama 3.2 3B Akash
+    - Chat Services: Scira, Qwen, ChatGot, Uncovr, Blackbox AI, Mistral Small 3.1 24B, Llama 3.2 3B Akash, Phi4
     - Image Generation: PixelMuse, MagicStudio, Fluently XL Final, Flux Standard
     - Voice Generation
 
@@ -883,7 +935,7 @@ def print_help():
     print(f"{Fore.CYAN}│ {Style.BRIGHT}{Fore.WHITE}AVAILABLE SERVICES{' ' * (box_width - 20)}│{Style.RESET_ALL}")
     print(f"{Fore.CYAN}│ {Fore.WHITE}💬 Chat Services:{' ' * (box_width - 17)}│")
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Scira, Qwen, ChatGot, Uncovr, Blackbox AI{' ' * (box_width - 48)}│")
-    print(f"{Fore.CYAN}│   {Fore.WHITE}• Mistral Small 3.1 24B, Llama 3.2 3B Akash{' ' * (box_width - 48)}│")
+    print(f"{Fore.CYAN}│   {Fore.WHITE}• Mistral Small 3.1 24B, Llama 3.2 3B Akash, Phi4{' ' * (box_width - 54)}│")
     print(f"{Fore.CYAN}│ {Fore.WHITE}🎨 Generation Services:{' ' * (box_width - 24)}│")
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Image: PixelMuse, MagicStudio, Fluently XL, Flux Standard, MitraAI{' ' * (box_width - 73)}│")
     print(f"{Fore.CYAN}│   {Fore.WHITE}• Voice Generation{' ' * (box_width - 21)}│")
@@ -947,20 +999,22 @@ def main():
         elif choice == 7:
             run_llama_akash()
         elif choice == 8:
-            run_pixelmuse_image_generation()
+            run_phi4_chat()
         elif choice == 9:
-            run_magicstudio_image_generation()
+            run_pixelmuse_image_generation()
         elif choice == 10:
-            run_fluently_xl()
+            run_magicstudio_image_generation()
         elif choice == 11:
-            run_flux_standard()
+            run_fluently_xl()
         elif choice == 12:
-            run_mitraai_image_generation()
+            run_flux_standard()
         elif choice == 13:
-            run_voice_generation()
+            run_mitraai_image_generation()
         elif choice == 14:
-            clear_screen()
+            run_voice_generation()
         elif choice == 15:
+            clear_screen()
+        elif choice == 16:
             print_help()
 
 

@@ -70,6 +70,11 @@ except ImportError:
     send_request_api = None
     format_response_json = None
 
+try:
+    from phi4_chat import Phi4ChatClient
+except ImportError:
+    Phi4ChatClient = None
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -109,6 +114,10 @@ if MistralSmall is not None:
 
 if LlamaAkash is not None:
     AVAILABLE_MODELS.append({"id": "llama-akash", "name": "Llama 3.2 3B Akash", "websearch": False})
+
+# Phi4 model
+if Phi4ChatClient is not None:
+    AVAILABLE_MODELS.append({"id": "phi4", "name": "Phi 4 Chat", "websearch": False})
 
 # Define available image models
 AVAILABLE_IMAGE_MODELS = []
@@ -168,6 +177,8 @@ def get_model_instance(model_id):
         instance = MistralSmall()
     elif model_id == "llama-akash":
         instance = LlamaAkash()
+    elif model_id == "phi4":
+        instance = Phi4ChatClient()
     else:
         return None
 
@@ -263,6 +274,9 @@ def chat():
             instance = get_model_instance(model_id)
             response = instance.send_message(message)
         elif model_id == "llama-akash":
+            instance = get_model_instance(model_id)
+            response = instance.send_message(message)
+        elif model_id == "phi4":
             instance = get_model_instance(model_id)
             response = instance.send_message(message)
         else:
